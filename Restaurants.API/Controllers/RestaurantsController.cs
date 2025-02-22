@@ -1,27 +1,32 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Restaurants.Application.Restaurants;
 using Restaurants.Application.Restaurants.Commands.CreateRestaurant;
 using Restaurants.Application.Restaurants.Commands.DeleteRestaurant;
 using Restaurants.Application.Restaurants.Commands.UpdateRestaurant;
 using Restaurants.Application.Restaurants.Dtos;
 using Restaurants.Application.Restaurants.Queries.GetAllRestaurants;
 using Restaurants.Application.Restaurants.Queries.GetRestaurantById;
+using Restaurants.Domain.Constants;
+using Restaurants.Infrastructure.Authorization;
 
 namespace Restaurants.API.Controllers
 {
     [ApiController]
     [Route("api/v1/restaurants")]
+    [Authorize]
     public class RestaurantsController(IMediator mediator) : ControllerBase
     {
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RestaurantDto>>> GetAll()
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<RestaurantDto>>> GetAll([FromQuery] GetAllRestaurantsQuery query)
         {
-            var restaurants = await mediator.Send(new GetAllRestaurantsQuery());
+            var restaurants = await mediator.Send(query);
             return Ok(restaurants);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = PolicyNames.HasNationality)]
         public async Task<ActionResult<RestaurantDto>> GetById([FromRoute] int id)
         {
             var restaurant = await mediator.Send(new GetRestaurantByIdQuery(id));
@@ -31,9 +36,9 @@ namespace Restaurants.API.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteRestaurant([FromRoute] int Id)
+        public async Task<IActionResult> DeleteRestaurant([FromRoute] int id)
         {
-            await mediator.Send(new DeleteRestaurantCommand(Id));
+            await mediator.Send(new DeleteRestaurantCommand(id));
 
             return NoContent();
         }
@@ -51,6 +56,7 @@ namespace Restaurants.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = UserRoles.Owner)]
         public async Task<IActionResult> CreateRestaurant(CreateRestaurantCommand command)
         {
             int id = await mediator.Send(command);
