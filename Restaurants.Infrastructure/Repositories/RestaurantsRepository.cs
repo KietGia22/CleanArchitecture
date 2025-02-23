@@ -35,7 +35,8 @@ namespace Restaurants.Infrastructure.Repositories
 
             var baseQuery = dbContext
                 .Restaurants
-                .Where(r => searchPhraseLower == null || (r.Name.ToLower().Contains(searchPhraseLower) || r.Description.ToLower().Contains(searchPhraseLower)));
+                .Where(r => searchPhraseLower == null || (r.Name.ToLower().Contains(searchPhraseLower) || r.Description.ToLower().Contains(searchPhraseLower)))
+                .Skip(pageSize * (pageNumber - 1));
 
             var totalCount = await baseQuery.CountAsync();
 
@@ -56,7 +57,6 @@ namespace Restaurants.Infrastructure.Repositories
             }
 
             var restaurants = await baseQuery
-                .Skip(pageSize * (pageNumber - 1))
                 .Take(pageSize)
                 .ToListAsync();
 
